@@ -6,6 +6,7 @@ from pathlib import Path
 from lakehouse.ingest import tlc
 from lakehouse.ingest.download import HttpDownloader, SourceNotPublishedError
 from lakehouse.ingest.loader import load_month
+from lakehouse.ingest.reference import load_zone_lookup
 from lakehouse.ingest.storage import DatabricksVolumeStorage, LocalStorage
 
 
@@ -23,6 +24,8 @@ def main() -> None:
     else:
         storage = DatabricksVolumeStorage(args.root)
     downloader = HttpDownloader()
+
+    print(f"zone lookup {load_zone_lookup(storage, downloader)}")
 
     months = tlc.months_between(tlc.parse_month(args.start), tlc.parse_month(args.end))
     for month in months:

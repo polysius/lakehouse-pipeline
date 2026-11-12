@@ -12,13 +12,17 @@ def parse_month(text: str) -> date:
     return date(int(year), int(month), 1)
 
 
+def next_month(month: date) -> date:
+    return date(month.year + month.month // 12, month.month % 12 + 1, 1)
+
+
 def months_between(start: date, end: date) -> list[date]:
     """Every month from start to end, both included."""
     months = []
     current = start
     while current <= end:
         months.append(current)
-        current = date(current.year + current.month // 12, current.month % 12 + 1, 1)
+        current = next_month(current)
     return months
 
 

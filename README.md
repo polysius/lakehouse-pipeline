@@ -16,7 +16,7 @@ PySpark and pyarrow do not install on native ARM64 Windows, so run Python inside
 | Milestone | State |
 |-----------|-------|
 | M1 Ingestion (bronze) | done |
-| M2 Transformation (silver) | not started |
+| M2 Transformation (silver) | done |
 | M3 Modelling (gold, dbt) | not started |
 | M4 Data quality | not started |
 | M5 Serving and BI | not started |
@@ -56,10 +56,40 @@ make airflow-up
 
 Then open http://localhost:8080 (user and password `admin`) and unpause `tlc_bronze_ingest`.
 
+## M2: silver
+
+```
+bronze parquet -> standardise -> flag_rejects -> split -> deduplicate -> labels and zones -> Delta
+                                                    |
+                                                    +-> silver_trips_rejected (with reject_reason)
+```
+
+`lakehouse.silver.job` reads one bronze month at a time on Databricks serverless, through
+Databricks Connect. It renames columns to snake_case, casts every column to one type, labels each
+bad row with the first quality rule it breaks, removes duplicates on a natural key, and joins the
+taxi zone lookup. Good rows go to `workspace.lakehouse.silver_trips`, partitioned by pickup date.
+Rejected rows keep their reason in `silver_trips_rejected`, ready for the M4 quarantine. Each
+month is written with `replaceWhere`, so a rerun replaces that month and never duplicates it.
+Row counts per month land in `silver_run_log`.
+
+The quality rules, column types and lookup labels live in `lakehouse/silver/rules.py` as plain
+data. Results, including the layout benchmark, are in RESULTS.md.
+
+```
+pip install -e ".[spark]"        # Databricks Connect, not plain pyspark
+python -m lakehouse.ingest --start 2024-01 --end 2024-12 --storage databricks     --root /Volumes/workspace/lakehouse/bronze
+python -m lakehouse.silver.job --start 2024-01 --end 2024-12
+python scripts/benchmark_layout.py --build
+```
+
+The Spark tests need `DATABRICKS_HOST` and `DATABRICKS_TOKEN` and skip without them.
+
 ## Layout
 
 ```
 src/lakehouse/ingest/   download, storage backends, idempotent loader, CLI
+src/lakehouse/silver/   quality rules, transformations, silver job
+scripts/                layout benchmark
 dags/                   Airflow DAGs
 docker/                 Airflow image and compose file
 tests/                  pytest
@@ -67,5 +97,5 @@ tests/                  pytest
 
 ## Limitations
 
-The `DatabricksVolumeStorage` backend has not run against a live workspace yet. It is covered by the
-same interface as the local backend, which the tests exercise.
+The layout benchmark shows no measurable difference between layouts at this data size. See RESULTS.md.
+The Airflow DAG has not run against Airflow yet. Its loader has run against the live volume.
