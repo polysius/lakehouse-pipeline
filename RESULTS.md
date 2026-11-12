@@ -43,7 +43,7 @@ Rejected rows by first broken rule:
 | Reason | Rows |
 |--------|-----:|
 | non_positive_distance | 764,825 |
-| negative_amount | 679,274 |
+| invalid_amount | 679,274 |
 | duration_too_long | 21,994 |
 | dropoff_not_after_pickup | 13,510 |
 | distance_too_long | 1,590 |

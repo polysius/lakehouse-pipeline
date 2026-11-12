@@ -16,8 +16,9 @@ def test_every_silver_column_is_named_once():
     assert len(silver_names) == len(set(silver_names))
 
 
-def test_thresholds_appear_in_rule_conditions():
-    conditions = " ".join(rule.condition for rule in rules.REJECT_RULES)
-    assert str(rules.MAX_TRIP_MILES) in conditions
-    assert str(rules.MAX_FARE_DOLLARS) in conditions
-    assert str(rules.MAX_TRIP_HOURS * 3600) in conditions
+def test_columns_with_a_range_rule_also_have_a_null_rule():
+    # In Spark SQL a comparison with null is not true, so null values need their own check.
+    conditions = {rule.reason: rule.condition for rule in rules.REJECT_RULES}
+    assert "IS NULL" in conditions["invalid_amount"]
+    assert "IS NULL" in conditions["non_positive_distance"]
+    assert "IS NULL" in conditions["missing_timestamp"]

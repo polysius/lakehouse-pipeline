@@ -7,6 +7,8 @@ import pytest
 
 pytest.importorskip("databricks.connect")
 
+from pyspark.sql import functions as F
+
 from lakehouse.silver import transform
 
 
@@ -36,7 +38,12 @@ def make_trip(**overrides):
 
 
 def reason_for(spark, **overrides):
-    trips = spark.createDataFrame([make_trip(**overrides)])
+    # Spark cannot infer a type for a column that is only null, so nulls are applied after.
+    null_columns = [name for name, value in overrides.items() if value is None]
+    present = {name: value for name, value in overrides.items() if value is not None}
+    trips = spark.createDataFrame([make_trip(**present)])
+    for name in null_columns:
+        trips = trips.withColumn(name, F.lit(None).cast(dict(trips.dtypes)[name]))
     return transform.flag_rejects(trips).collect()[0]["reject_reason"]
 
 
@@ -52,12 +59,24 @@ def test_good_trip_has_no_reason(spark):
         ({"dropoff_datetime": datetime(2024, 1, 5, 17, 0)}, "duration_too_long"),
         ({"trip_distance": 0.0}, "non_positive_distance"),
         ({"trip_distance": 250.0}, "distance_too_long"),
-        ({"fare_amount": -5.0}, "negative_amount"),
+        ({"fare_amount": -5.0}, "invalid_amount"),
         ({"fare_amount": 900.0}, "fare_too_high"),
     ],
 )
 def test_each_rule_labels_its_row(spark, overrides, expected):
     assert reason_for(spark, **overrides) == expected
+
+
+def test_null_amounts_are_rejected(spark):
+    assert reason_for(spark, fare_amount=None, total_amount=None) == "invalid_amount"
+    assert reason_for(spark, fare_amount=None, total_amount=10.0) == "invalid_amount"
+
+
+def test_limits_are_inclusive(spark):
+    # Exactly 100 miles, exactly 6 hours and exactly 500 dollars are still allowed.
+    assert reason_for(spark, trip_distance=100.0) is None
+    assert reason_for(spark, dropoff_datetime=datetime(2024, 1, 5, 16, 0)) is None
+    assert reason_for(spark, fare_amount=500.0, total_amount=510.0) is None
 
 
 def test_first_broken_rule_wins(spark):

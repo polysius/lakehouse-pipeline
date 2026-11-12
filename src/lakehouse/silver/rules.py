@@ -89,6 +89,9 @@ REJECT_RULES = (
     ),
     RejectRule("non_positive_distance", "trip_distance IS NULL OR trip_distance <= 0"),
     RejectRule("distance_too_long", f"trip_distance > {MAX_TRIP_MILES}"),
-    RejectRule("negative_amount", "fare_amount < 0 OR total_amount <= 0"),
+    RejectRule(
+        "invalid_amount",
+        "fare_amount IS NULL OR total_amount IS NULL OR fare_amount < 0 OR total_amount <= 0",
+    ),
     RejectRule("fare_too_high", f"fare_amount > {MAX_FARE_DOLLARS}"),
 )
