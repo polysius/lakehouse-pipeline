@@ -87,7 +87,7 @@ The Spark tests need `DATABRICKS_HOST` and `DATABRICKS_TOKEN` and skip without t
 ## Layout
 
 ```
-src/lakehouse/ingest/   download, storage backends, idempotent loader, CLI
+src/lakehouse/ingest/   download, storage backends, idempotent loader, zone lookup, CLI
 src/lakehouse/silver/   quality rules, transformations, silver job
 scripts/                layout benchmark
 dags/                   Airflow DAGs
