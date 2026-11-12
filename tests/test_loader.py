@@ -84,6 +84,17 @@ def test_crash_before_manifest_is_redone_without_duplicates(storage):
     assert len(list((storage.root / "tlc").rglob("*.parquet"))) == 1
 
 
+def test_corrupt_manifest_is_redone(storage):
+    month = date(2024, 1, 1)
+    load_month("yellow", month, storage, FakeDownloader())
+    (storage.root / tlc.manifest_key("yellow", month)).write_text('{"dataset": "yel')
+
+    result = load_month("yellow", month, storage, FakeDownloader())
+
+    assert result.status == "loaded"
+    assert result.record.row_count == 5
+
+
 def test_unpublished_month_raises_and_writes_nothing(storage):
     downloader = FakeDownloader(unpublished=("2024-01",))
 

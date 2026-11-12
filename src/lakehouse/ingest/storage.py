@@ -47,7 +47,9 @@ class LocalStorage(Storage):
     def write_text(self, key: str, text: str) -> None:
         target = self._path(key)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text)
+        temporary = target.with_name(target.name + ".part")
+        temporary.write_text(text)
+        temporary.replace(target)
 
 
 class DatabricksVolumeStorage(Storage):

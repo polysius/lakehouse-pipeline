@@ -42,6 +42,17 @@ def sha256_of(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _read_complete_load(storage: Storage, data_key: str, manifest_key: str) -> LoadRecord | None:
+    """The earlier load's record, or None when the month must be loaded again."""
+    if not (storage.exists(data_key) and storage.exists(manifest_key)):
+        return None
+    try:
+        return LoadRecord(**json.loads(storage.read_text(manifest_key)))
+    except (ValueError, TypeError):
+        # A corrupt or outdated manifest cannot vouch for the data, so redo the month.
+        return None
+
+
 def load_month(dataset: str, month: date, storage: Storage, downloader: Downloader) -> LoadResult:
     """Download one month into bronze unless a complete load already exists.
 
@@ -52,9 +63,9 @@ def load_month(dataset: str, month: date, storage: Storage, downloader: Download
     data_key = tlc.bronze_key(dataset, month)
     manifest_key = tlc.manifest_key(dataset, month)
 
-    if storage.exists(data_key) and storage.exists(manifest_key):
-        record = LoadRecord(**json.loads(storage.read_text(manifest_key)))
-        return LoadResult("skipped", record)
+    existing = _read_complete_load(storage, data_key, manifest_key)
+    if existing is not None:
+        return LoadResult("skipped", existing)
 
     url = tlc.source_url(dataset, month)
     with tempfile.TemporaryDirectory() as scratch:
