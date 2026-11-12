@@ -37,7 +37,8 @@ the two steps is redone on the next run. The data path depends only on dataset a
 redo overwrites the file and never duplicates it.
 
 The Airflow DAG `tlc_bronze_ingest` runs once per month with `catchup=True` and one active run at a
-time. The TLC publishes about two months late, so a run retries every six hours until its file exists.
+time. The TLC publishes about two months late. A run for an unpublished month retries every six
+hours, five times, then fails. Clear the failed run in Airflow once the file is published.
 
 ### Run it
 

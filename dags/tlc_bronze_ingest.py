@@ -21,7 +21,8 @@ VOLUME_ROOT = os.environ.get("BRONZE_VOLUME_ROOT", "/Volumes/main/lakehouse/bron
     # One month at a time keeps the backfill gentle on the TLC bucket.
     max_active_runs=1,
     default_args={
-        # The TLC publishes about two months late, so a run may need to wait for its file.
+        # The TLC publishes about two months late. A run for an unpublished month retries for
+        # about 30 hours, then fails. Clear the failed run once the file is published.
         "retries": 5,
         "retry_delay": timedelta(hours=6),
     },
