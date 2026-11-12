@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from airflow.decorators import dag, task
 
 DATASET = os.environ.get("TLC_DATASET", "yellow")
-VOLUME_ROOT = os.environ.get("BRONZE_VOLUME_ROOT", "/Volumes/main/lakehouse/bronze")
+VOLUME_ROOT = os.environ.get("BRONZE_VOLUME_ROOT", "/Volumes/workspace/lakehouse/bronze")
 
 
 @dag(

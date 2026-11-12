@@ -10,6 +10,8 @@ dependencies = [
 
 [project.optional-dependencies]
 databricks = ["databricks-sdk"]
+# Runs PySpark on Databricks serverless. Do not install plain pyspark in the same environment.
+spark = ["databricks-sdk", "databricks-connect>=17,<18"]
 dev = ["pytest", "ruff"]
 
 [build-system]

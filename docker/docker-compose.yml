@@ -10,7 +10,7 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     DATABRICKS_HOST: ${DATABRICKS_HOST}
     DATABRICKS_TOKEN: ${DATABRICKS_TOKEN}
-    BRONZE_VOLUME_ROOT: ${BRONZE_VOLUME_ROOT:-/Volumes/main/lakehouse/bronze}
+    BRONZE_VOLUME_ROOT: ${BRONZE_VOLUME_ROOT:-/Volumes/workspace/lakehouse/bronze}
   volumes:
     - ../dags:/opt/airflow/dags
     - ../airflow-logs:/opt/airflow/logs
