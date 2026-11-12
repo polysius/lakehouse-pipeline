@@ -72,6 +72,18 @@ def test_null_amounts_are_rejected(spark):
     assert reason_for(spark, fare_amount=None, total_amount=10.0) == "invalid_amount"
 
 
+@pytest.mark.parametrize(
+    "column, expected",
+    [
+        ("trip_distance", "non_positive_distance"),
+        ("pickup_datetime", "missing_timestamp"),
+        ("dropoff_datetime", "missing_timestamp"),
+    ],
+)
+def test_null_values_are_rejected(spark, column, expected):
+    assert reason_for(spark, **{column: None}) == expected
+
+
 def test_limits_are_inclusive(spark):
     # Exactly 100 miles, exactly 6 hours and exactly 500 dollars are still allowed.
     assert reason_for(spark, trip_distance=100.0) is None
