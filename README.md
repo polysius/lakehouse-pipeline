@@ -17,7 +17,7 @@ PySpark and pyarrow do not install on native ARM64 Windows, so run Python inside
 |-----------|-------|
 | M1 Ingestion (bronze) | done |
 | M2 Transformation (silver) | done |
-| M3 Modelling (gold, dbt) | not started |
+| M3 Modelling (gold, dbt) | done |
 | M4 Data quality | not started |
 | M5 Serving and BI | not started |
 | M6 Tie-in with the text-to-SQL agent | not started |
@@ -84,11 +84,45 @@ python scripts/benchmark_layout.py --build
 
 The Spark tests need `DATABRICKS_HOST` and `DATABRICKS_TOKEN` and skip without them.
 
+## M3: gold, dbt
+
+A dbt project in `dbt/` builds a star schema in `workspace.gold` on the Databricks serverless SQL
+warehouse, using `dbt-databricks`.
+
+```
+silver_trips -> stg_trips -> fct_trips          (incremental, merge on trip_key)
+taxi_zones   -> stg_zones -> dim_zone
+payment_types, rate_codes, vendors (seeds) -> dim_payment_type, dim_rate_code, dim_vendor
+dim_date                                       (generated calendar)
+```
+
+![dbt lineage graph](docs/lineage.png)
+
+`fct_trips` has one row per trip, with foreign keys to the five dimensions and the trip measures.
+The silver data has no trip id, so `trip_key` is a hash of the fields the silver job deduplicates
+on. The fact table loads incrementally with a merge on that key and reloads the last 31 days on
+each run, because the silver job replaces whole months. The model uses liquid clustering on pickup
+date and pickup zone. Trips with no rate code map to the dictionary's Unknown code.
+
+The lineage graph shows data flow only. The links from the fact table to each dimension are
+checked by `relationships` tests in `dbt/models/marts/marts.yml`.
+
+```
+pip install "dbt-databricks>=1.9,<2"      # use a separate virtual environment
+cd dbt
+dbt build --profiles-dir .                # seeds, models and tests
+dbt docs generate --profiles-dir . && dbt docs serve --profiles-dir .
+```
+
+dbt reads `DATABRICKS_HOST`, `DATABRICKS_TOKEN` and `DATABRICKS_HTTP_PATH` from the environment.
+
 ## Layout
 
 ```
 src/lakehouse/ingest/   download, storage backends, idempotent loader, zone lookup, CLI
 src/lakehouse/silver/   quality rules, transformations, silver job
+dbt/                    dbt project: staging, star schema, seeds, tests
+docs/                   images for this README
 scripts/                layout benchmark
 dags/                   Airflow DAGs
 docker/                 Airflow image and compose file

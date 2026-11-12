@@ -1,0 +1,10 @@
+version: 2
+
+sources:
+  - name: silver
+    description: Cleaned trips written by the PySpark silver job.
+    database: workspace
+    schema: lakehouse
+    tables:
+      - name: silver_trips
+        description: One row per trip after quality rules and deduplication.

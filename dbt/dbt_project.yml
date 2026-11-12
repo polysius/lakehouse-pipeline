@@ -1,0 +1,35 @@
+name: lakehouse
+version: "0.1.0"
+config-version: 2
+profile: lakehouse
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+
+vars:
+  # Range of the date dimension.
+  calendar_start: "2024-01-01"
+  calendar_end: "2025-12-31"
+
+models:
+  lakehouse:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
+
+seeds:
+  lakehouse:
+    taxi_zones:
+      +column_types:
+        LocationID: int
+    payment_types:
+      +column_types:
+        payment_type_id: int
+    rate_codes:
+      +column_types:
+        rate_code_id: int
+    vendors:
+      +column_types:
+        vendor_id: int
