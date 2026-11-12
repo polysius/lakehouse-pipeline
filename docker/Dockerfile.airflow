@@ -1,0 +1,5 @@
+FROM apache/airflow:2.10.5-python3.12
+
+COPY pyproject.toml /opt/lakehouse/pyproject.toml
+COPY src /opt/lakehouse/src
+RUN pip install --no-cache-dir "/opt/lakehouse[databricks]"
