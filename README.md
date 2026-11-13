@@ -68,7 +68,7 @@ bronze parquet -> standardise -> flag_rejects -> split -> deduplicate -> labels 
 Databricks Connect. It renames columns to snake_case, casts every column to one type, labels each
 bad row with the first quality rule it breaks, removes duplicates on a natural key, and joins the
 taxi zone lookup. Good rows go to `workspace.lakehouse.silver_trips`, partitioned by pickup date.
-Rejected rows keep their reason in `silver_trips_rejected`, ready for the M4 quarantine. Each
+Rejected rows keep their reason in `silver_trips_rejected`. Each
 month is written with `replaceWhere`, so a rerun replaces that month and never duplicates it.
 Row counts per month land in `silver_run_log`.
 
