@@ -10,7 +10,7 @@ macro-paths: ["macros"]
 vars:
   # Range of the date dimension.
   calendar_start: "2024-01-01"
-  calendar_end: "2025-12-31"
+  calendar_end: "2026-12-31"
 
 models:
   lakehouse:

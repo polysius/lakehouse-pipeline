@@ -101,7 +101,11 @@ dim_date                                       (generated calendar)
 `fct_trips` has one row per trip, with foreign keys to the five dimensions and the trip measures.
 The silver data has no trip id, so `trip_key` is a hash of the fields the silver job deduplicates
 on. The fact table loads incrementally with a merge on that key and reloads the last 31 days on
-each run, because the silver job replaces whole months. The model uses liquid clustering on pickup
+each run, because the silver job replaces whole months. To merge an older month that silver rebuilt, pass
+`--vars '{reload_from: "2024-03-01"}'`. The merge never deletes, so after a rule change that
+removes trips from silver, run `dbt build --full-refresh -s fct_trips`. The date dimension covers
+2024 to 2026 and its range is set by `calendar_start` and `calendar_end` in `dbt_project.yml`.
+The model uses liquid clustering on pickup
 date and pickup zone. Trips with no rate code map to the dictionary's Unknown code.
 
 The lineage graph shows data flow only. The links from the fact table to each dimension are
