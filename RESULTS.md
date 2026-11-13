@@ -88,3 +88,32 @@ difference.
 19 tests, 31 steps in total, all passing, in about 67 seconds on the first run when the warehouse
 had to start. A second `dbt build` left `fct_trips` at 39,687,869 rows, equal to `silver_trips`,
 so the incremental merge does not duplicate trips.
+
+## M4: data quality
+
+Great Expectations gate on the twelve real 2024 months: all 12 pass, 10 checks each, and the silver
+row counts are unchanged. The gate adds about 45 seconds per month, so a month takes about 60
+seconds with it, against 10 to 16 seconds without.
+
+| Level | Failure rate, 2024 |
+|-------|-------------------:|
+| Rows rejected by row rules | 3.6% of bronze rows (1,481,846 of 41,169,720) |
+| Batches failing the gate | 0 of 12 months |
+
+dbt: 36 steps pass in `dbt build`, with 24 tests over the star schema.
+
+Planted bad batch, in the sandbox schema: April, cut to 5% of its rows and corrupted. The gate
+failed 4 of 10 checks.
+
+| Check | Result |
+|-------|-------:|
+| pickup_datetime is inside the month | 23.92% of rows fail |
+| fare_amount is within 0 to 500 | 21.41% of rows fail |
+| payment_type is a known code | 31.51% of rows fail |
+| row count is within 1,954,891 to 4,060,160 | observed 175,148 |
+
+The 175,148 rows were held in `quarantine_trips`, the Airflow task failed without retries, and the
+alert was logged. The sandbox `silver_trips` kept only January to March.
+
+Freshness: a month passes only when its pickups reach within 3 days of both month ends. The TLC
+publishes about two months late, so the bronze task retries for about 30 hours and then fails.

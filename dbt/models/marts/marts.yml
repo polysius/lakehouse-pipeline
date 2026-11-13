@@ -39,18 +39,25 @@ models:
                 field: zone_id
       - name: payment_type_id
         tests:
+          - accepted_values:
+              arguments:
+                values: [0, 1, 2, 3, 4, 5, 6]
           - relationships:
               arguments:
                 to: ref('dim_payment_type')
                 field: payment_type_id
       - name: rate_code_id
         tests:
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5, 6, 99]
           - relationships:
               arguments:
                 to: ref('dim_rate_code')
                 field: rate_code_id
       - name: total_amount
         description: Total charged to the passenger in dollars.
+        tests: [not_null]
 
   - name: dim_date
     description: One row per calendar day.

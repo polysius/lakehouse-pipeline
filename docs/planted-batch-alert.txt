@@ -1,0 +1,8 @@
+QUALITY ALERT: batch 2024-04 failed 4 of 10 checks (175,148 rows).
+  FAILED pickup_datetime is inside the month: 23.92% of rows fail
+  FAILED fare_amount is within 0 to 500: 21.41% of rows fail
+  FAILED payment_type is a known code: 31.51% of rows fail
+  FAILED row count is within 1,954,891 to 4,060,160: observed 175,148
+The batch was not published. Its rows are held in workspace.lakehouse_demo.quarantine_trips for review.
+ERROR - ALERT: task build_silver in tlc_pipeline failed for run manual__2024-05-01T00:00:00+00:00: QUALITY ALERT: batch 2024-04 failed 4 of 10 checks (175,148 rows).
+INFO - DagRun Finished: dag_id=tlc_pipeline, execution_date=2024-05-01 00:00:00+00:00, run_id=manual__2024-05-01T00:00:00+00:00, run_start_date=2024-05-01 00:00:00+00:00, run_end_date=2026-11-13 17:02:39.839471+00:00, 

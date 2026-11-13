@@ -16,6 +16,9 @@ from pyspark.sql.types import IntegerType, LongType, StringType, StructField, St
 
 from lakehouse.ingest import tlc
 from lakehouse.ingest.reference import ZONE_LOOKUP_KEY
+from lakehouse.quality import step
+from lakehouse.quality.alert import format_alert
+from lakehouse.quality.gate import QualityGateFailed
 from lakehouse.silver import transform
 
 DEFAULT_BRONZE_ROOT = "/Volumes/workspace/lakehouse/bronze"
@@ -55,6 +58,8 @@ def run_month(
     )
 
     flagged = transform.flag_rejects(transform.standardise(bronze, source_month))
+    # Raises QualityGateFailed, and holds the batch in quarantine, before anything is published.
+    step.check_batch(spark, schema, month, flagged, overwrite_where)
     good, rejected = transform.split_rejects(flagged)
 
     silver = transform.add_pickup_date(
@@ -104,7 +109,11 @@ def main() -> None:
 
     spark = DatabricksSession.builder.serverless(True).getOrCreate()
     for month in tlc.months_between(tlc.parse_month(args.start), tlc.parse_month(args.end)):
-        row = run_month(spark, args.dataset, month, args.bronze_root, args.schema)
+        try:
+            row = run_month(spark, args.dataset, month, args.bronze_root, args.schema)
+        except QualityGateFailed as failure:
+            print(format_alert(failure.result, f"{args.schema}.quarantine_trips"))
+            raise SystemExit(1) from failure
         print(
             f"{row['source_month']} bronze={row['bronze_rows']:,} rejected={row['rejected_rows']:,} "
             f"duplicates={row['duplicate_rows']:,} silver={row['silver_rows']:,} "
