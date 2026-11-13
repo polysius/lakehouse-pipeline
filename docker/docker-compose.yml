@@ -11,6 +11,7 @@ x-airflow-common: &airflow-common
     DATABRICKS_HOST: ${DATABRICKS_HOST}
     DATABRICKS_TOKEN: ${DATABRICKS_TOKEN}
     BRONZE_VOLUME_ROOT: ${BRONZE_VOLUME_ROOT:-/Volumes/workspace/lakehouse/bronze}
+    SILVER_SCHEMA: ${SILVER_SCHEMA:-workspace.lakehouse}
   volumes:
     - ../dags:/opt/airflow/dags
     - ../airflow-logs:/opt/airflow/logs

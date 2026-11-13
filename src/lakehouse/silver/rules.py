@@ -5,6 +5,8 @@ from dataclasses import dataclass
 MAX_TRIP_HOURS = 6
 MAX_TRIP_MILES = 100
 MAX_FARE_DOLLARS = 500
+# Zone ids in the TLC lookup run from 1 to 265.
+MAX_ZONE_ID = 265
 
 # bronze column -> (silver column, Spark SQL type). Bronze files differ in integer widths
 # between months, so every column is cast to one type.
@@ -67,6 +69,28 @@ VENDORS = {
 }
 
 
+def _unknown_code_condition() -> str:
+    """True when a coded column holds a value that is not in the data dictionary."""
+    coded = {
+        "payment_type": PAYMENT_TYPES,
+        "rate_code_id": RATE_CODES,
+        "vendor_id": VENDORS,
+    }
+    parts = [
+        f"({column} IS NOT NULL AND {column} NOT IN ({', '.join(str(code) for code in codes)}))"
+        for column, codes in coded.items()
+    ]
+    return " OR ".join(parts)
+
+
+def _unknown_location_condition() -> str:
+    parts = [
+        f"({column} IS NOT NULL AND ({column} < 1 OR {column} > {MAX_ZONE_ID}))"
+        for column in ("pu_location_id", "do_location_id")
+    ]
+    return " OR ".join(parts)
+
+
 @dataclass(frozen=True)
 class RejectRule:
     reason: str
@@ -94,4 +118,7 @@ REJECT_RULES = (
         "fare_amount IS NULL OR total_amount IS NULL OR fare_amount < 0 OR total_amount <= 0",
     ),
     RejectRule("fare_too_high", f"fare_amount > {MAX_FARE_DOLLARS}"),
+    # The gold dimensions only hold the codes below. A null is allowed, an unknown value is not.
+    RejectRule("unknown_code", _unknown_code_condition()),
+    RejectRule("unknown_location", _unknown_location_condition()),
 )
