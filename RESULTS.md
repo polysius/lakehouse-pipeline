@@ -100,6 +100,10 @@ seconds with it, against 10 to 16 seconds without.
 | Rows rejected by row rules | 3.6% of bronze rows (1,481,846 of 41,169,720) |
 | Batches failing the gate | 0 of 12 months |
 
+Two more row rules, `unknown_code` and `unknown_location`, reject codes and zone ids that the gold
+dimensions do not hold, so silver and the dbt tests agree. They reject 0 rows in 2024, and the
+totals above are unchanged after a rebuild with them.
+
 dbt: 36 steps pass in `dbt build`, with 24 tests over the star schema.
 
 Planted bad batch, in the sandbox schema: April, cut to 5% of its rows and corrupted. The gate

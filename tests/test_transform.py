@@ -31,6 +31,8 @@ def make_trip(**overrides):
         "do_location_id": 200,
         "fare_amount": 15.0,
         "total_amount": 20.0,
+        "payment_type": 1,
+        "rate_code_id": 1,
         "source_month": "2024-01",
     }
     trip.update(overrides)
@@ -61,6 +63,11 @@ def test_good_trip_has_no_reason(spark):
         ({"trip_distance": 250.0}, "distance_too_long"),
         ({"fare_amount": -5.0}, "invalid_amount"),
         ({"fare_amount": 900.0}, "fare_too_high"),
+        ({"payment_type": 99}, "unknown_code"),
+        ({"rate_code_id": 42}, "unknown_code"),
+        ({"vendor_id": 9}, "unknown_code"),
+        ({"pu_location_id": 0}, "unknown_location"),
+        ({"do_location_id": 266}, "unknown_location"),
     ],
 )
 def test_each_rule_labels_its_row(spark, overrides, expected):
