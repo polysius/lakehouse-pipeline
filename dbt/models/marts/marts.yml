@@ -1,0 +1,80 @@
+version: 2
+
+models:
+  - name: fct_trips
+    description: >
+      Star schema fact table. One row per taxi trip, with foreign keys to the dimensions and
+      the trip measures. Loaded incrementally.
+    columns:
+      - name: trip_key
+        description: Hash of the fields that identify a trip.
+        tests: [unique, not_null]
+      - name: pickup_date
+        description: Pickup date, joins to dim_date.
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: vendor_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_vendor')
+                field: vendor_id
+      - name: pu_location_id
+        description: Pickup zone, joins to dim_zone.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_zone')
+                field: zone_id
+      - name: do_location_id
+        description: Dropoff zone, joins to dim_zone.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_zone')
+                field: zone_id
+      - name: payment_type_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_payment_type')
+                field: payment_type_id
+      - name: rate_code_id
+        tests:
+          - relationships:
+              arguments:
+                to: ref('dim_rate_code')
+                field: rate_code_id
+      - name: total_amount
+        description: Total charged to the passenger in dollars.
+
+  - name: dim_date
+    description: One row per calendar day.
+    columns:
+      - name: date_day
+        tests: [unique, not_null]
+
+  - name: dim_zone
+    description: NYC TLC taxi zones. Used for both pickup and dropoff.
+    columns:
+      - name: zone_id
+        tests: [unique, not_null]
+
+  - name: dim_payment_type
+    columns:
+      - name: payment_type_id
+        tests: [unique, not_null]
+
+  - name: dim_rate_code
+    columns:
+      - name: rate_code_id
+        tests: [unique, not_null]
+
+  - name: dim_vendor
+    columns:
+      - name: vendor_id
+        tests: [unique, not_null]

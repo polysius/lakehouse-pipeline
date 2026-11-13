@@ -81,3 +81,10 @@ produced 366 files of about 2 MB each, which is the small-file pattern that usua
 roughly 750 MB, 40 million rows is too small for layout to matter on this compute. A larger
 dataset, or a measure of bytes scanned from the query profile, would be needed to show a
 difference.
+
+## M3: gold
+
+`dbt build` on the serverless SQL warehouse: 4 seeds, 2 views, 5 tables, 1 incremental model and
+19 tests, 31 steps in total, all passing, in about 67 seconds on the first run when the warehouse
+had to start. A second `dbt build` left `fct_trips` at 39,687,869 rows, equal to `silver_trips`,
+so the incremental merge does not duplicate trips.
