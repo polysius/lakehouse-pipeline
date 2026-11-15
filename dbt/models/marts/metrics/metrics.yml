@@ -1,0 +1,25 @@
+version: 2
+
+models:
+  - name: metric_daily_trips
+    description: Trips and revenue per day.
+    columns:
+      - name: pickup_date
+        tests: [unique, not_null]
+  - name: metric_borough_revenue
+    description: Revenue per month and pickup borough.
+    columns:
+      - name: borough
+        tests: [not_null]
+  - name: metric_tip_rate
+    description: Average tip as a share of fare, by payment type.
+    columns:
+      - name: payment_type_name
+        tests: [unique, not_null]
+  - name: metric_hourly_demand
+    description: Trip counts by weekday and pickup hour, for a heatmap.
+  - name: metric_top_zones
+    description: The 15 pickup zones with the most revenue.
+    columns:
+      - name: zone
+        tests: [not_null]
