@@ -20,7 +20,7 @@ PySpark and pyarrow do not install on native ARM64 Windows, so run Python inside
 | M3 Modelling (gold, dbt) | done |
 | M4 Data quality | done |
 | M5 Serving and BI | done, dashboard screenshot pending |
-| M6 Tie-in with the text-to-SQL agent | not started |
+| M6 Tie-in with the text-to-SQL agent | done |
 
 ## M1: bronze ingestion
 
@@ -268,6 +268,24 @@ python scripts/make_tableau.py --local      # writes tableau/local/lakehouse.twb
 Open that file in Tableau, enter the access token when asked, then drag the five sheets onto a
 dashboard. The dashboard screenshot is not in the repository yet.
 
+## M6: tie-in with the text-to-SQL agent
+
+The gold tables are a second database for the [nl-analytics-agent](https://github.com/polysius/nl-analytics-agent)
+text-to-SQL agent. `scripts/export_gold.py` writes the five metric tables and five dimensions to CSV
+(about 2,000 rows), and the agent repo loads them into its own Postgres as the `taxi` database. The
+39.7 million row fact table is not exported, so the agent answers from the pre-aggregated metrics.
+
+```
+python scripts/export_gold.py --out data/gold_export       # needs the Databricks variables
+```
+
+The copy is a snapshot. A live connection would need a Databricks credential limited to SELECT on
+`workspace.gold`, because the agent depends on a read-only database role and the personal access
+token of a Free Edition workspace can write.
+
+On 18 hand-checked questions the agent answered 17 correctly, with Sonnet and one run. The
+question set, the single miss and the method are in RESULTS.md and in the agent repo.
+
 ## Layout
 
 ```
@@ -277,7 +295,7 @@ src/lakehouse/quality/  Great Expectations batch gate, quarantine step, alert te
 dbt/                    dbt project: staging, star schema, seeds, tests
 tableau/                Tableau workbook with a placeholder host
 docs/                   images for this README
-scripts/                layout benchmark, bad batch demo, workbook generator
+scripts/                layout benchmark, bad batch demo, workbook generator, gold export
 dags/                   Airflow DAGs
 docker/                 Airflow image and compose file
 tests/                  pytest
