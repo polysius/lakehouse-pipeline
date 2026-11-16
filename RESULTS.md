@@ -121,3 +121,11 @@ alert was logged. The sandbox `silver_trips` kept only January to March.
 
 Freshness: a month passes only when its pickups reach within 3 days of both month ends. The TLC
 publishes about two months late, so the bronze task retries for about 30 hours and then fails.
+
+## M5: serving
+
+`dbt build` for the five metric models and their tests: 12 steps pass, in 33 seconds on the
+serverless warehouse. The reconciliation test passes, so the daily, borough and hourly trip totals
+each equal the row count of `fct_trips`.
+
+The Tableau workbook has not been opened in Tableau, and there is no dashboard screenshot yet.

@@ -19,7 +19,7 @@ PySpark and pyarrow do not install on native ARM64 Windows, so run Python inside
 | M2 Transformation (silver) | done |
 | M3 Modelling (gold, dbt) | done |
 | M4 Data quality | done |
-| M5 Serving and BI | not started |
+| M5 Serving and BI | done, dashboard screenshot pending |
 | M6 Tie-in with the text-to-SQL agent | not started |
 
 ## M1: bronze ingestion
@@ -172,6 +172,102 @@ SILVER_SCHEMA=workspace.lakehouse_demo BRONZE_VOLUME_ROOT=/Volumes/workspace/lak
 python scripts/demo_bad_batch.py report
 ```
 
+## M5: serving and BI
+
+The gold tables are served by the Databricks serverless SQL warehouse. Five dbt models in
+`dbt/models/marts/metrics/` pre-aggregate the fact table into one small table per business metric,
+so a dashboard reads a few hundred rows instead of 40 million. A singular test checks that the
+daily, borough and hourly trip totals equal the row count of `fct_trips`.
+
+The SQL behind each metric, with dbt references replaced by table names:
+
+### Daily trips and revenue
+
+```sql
+-- Metric 1: demand and revenue trend. One row per day.
+select
+    pickup_date,
+    count(*) as trips,
+    round(sum(total_amount), 2) as revenue,
+    round(avg(fare_amount), 2) as avg_fare,
+    round(avg(trip_distance), 2) as avg_distance_miles
+from workspace.gold.fct_trips
+group by pickup_date
+```
+
+### Revenue by borough
+
+```sql
+-- Metric 2: revenue by pickup borough. One row per month and borough.
+select
+    date_trunc('month', trips.pickup_date) as month,
+    zones.borough,
+    count(*) as trips,
+    round(sum(trips.total_amount), 2) as revenue
+from workspace.gold.fct_trips as trips
+inner join workspace.gold.dim_zone as zones on trips.pu_location_id = zones.zone_id
+group by 1, 2
+```
+
+### Tip rate by payment type
+
+```sql
+-- Metric 3: tip rate by payment type. Tip as a share of the metered fare.
+-- Cash tips are not recorded in the data, so cash trips show a rate near zero.
+select
+    payment.payment_type_name,
+    count(*) as trips,
+    round(avg(trips.tip_amount / nullif(trips.fare_amount, 0)), 4) as avg_tip_rate
+from workspace.gold.fct_trips as trips
+inner join workspace.gold.dim_payment_type as payment on trips.payment_type_id = payment.payment_type_id
+group by payment.payment_type_name
+```
+
+### Demand by weekday and hour
+
+```sql
+-- Metric 4: when demand peaks. One row per weekday and pickup hour.
+select
+    dates.day_of_week,
+    dates.day_name,
+    hour(trips.pickup_datetime) as pickup_hour,
+    count(*) as trips
+from workspace.gold.fct_trips as trips
+inner join workspace.gold.dim_date as dates on trips.pickup_date = dates.date_day
+group by 1, 2, 3
+```
+
+### Top 15 pickup zones
+
+```sql
+-- Metric 5: the 15 pickup zones with the most revenue.
+select
+    zones.zone,
+    zones.borough,
+    count(*) as trips,
+    round(sum(trips.total_amount), 2) as revenue,
+    round(avg(trips.total_amount), 2) as avg_total
+from workspace.gold.fct_trips as trips
+inner join workspace.gold.dim_zone as zones on trips.pu_location_id = zones.zone_id
+group by zones.zone, zones.borough
+order by revenue desc
+limit 15
+```
+
+### Tableau workbook
+
+`scripts/make_tableau.py` writes `tableau/lakehouse.twb`, with one worksheet per metric table. It
+was written without Tableau available, so it has not been opened in Tableau and may need small
+fixes. The committed file has a placeholder host. To point it at your workspace:
+
+```
+set -a; . docker/.env; set +a
+python scripts/make_tableau.py --local      # writes tableau/local/lakehouse.twb, gitignored
+```
+
+Open that file in Tableau, enter the access token when asked, then drag the five sheets onto a
+dashboard. The dashboard screenshot is not in the repository yet.
+
 ## Layout
 
 ```
@@ -179,8 +275,9 @@ src/lakehouse/ingest/   download, storage backends, idempotent loader, zone look
 src/lakehouse/silver/   row rules, transformations, silver job
 src/lakehouse/quality/  Great Expectations batch gate, quarantine step, alert text
 dbt/                    dbt project: staging, star schema, seeds, tests
+tableau/                Tableau workbook with a placeholder host
 docs/                   images for this README
-scripts/                layout benchmark
+scripts/                layout benchmark, bad batch demo, workbook generator
 dags/                   Airflow DAGs
 docker/                 Airflow image and compose file
 tests/                  pytest
