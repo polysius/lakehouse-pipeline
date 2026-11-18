@@ -129,3 +129,15 @@ serverless warehouse. The reconciliation test passes, so the daily, borough and 
 each equal the row count of `fct_trips`.
 
 The Tableau workbook has not been opened in Tableau, and there is no dashboard screenshot yet.
+
+## M6: text-to-SQL agent on the gold tables
+
+The agent in nl-analytics-agent answered 17 of 18 questions correctly (94.4%) over a Postgres
+snapshot of the gold tables, with Sonnet through the Claude Code CLI and one run. The grand total in
+the snapshot is 39,687,869 trips, the same as the silver table and `fct_trips`. Questions cover
+totals, joins to `dim_date`, ordering and top zones: 6 easy, 7 medium and 5 hard, with one miss
+among the medium ones.
+
+The miss returned a month as the date 2024-10-01 where the gold query returned the name October.
+It is right in substance and wrong under exact matching. With 18 questions, each one is 5.6 points.
+Latency was p50 8.0 seconds and p95 10.4 seconds, at $0.011 per question.
